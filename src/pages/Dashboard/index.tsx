@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react/jsx-no-bind */
+import React, { useState, useEffect, useCallback } from 'react';
 
 import Header from '../../components/Header';
 
@@ -27,9 +28,9 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // TODO LOAD FOODS
+      const apiResponse = await api.get<IFoodPlate[]>('/foods');
+      setFoods(apiResponse.data);
     }
-
     loadFoods();
   }, []);
 
@@ -37,7 +38,11 @@ const Dashboard: React.FC = () => {
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
     try {
-      // TODO ADD A NEW FOOD PLATE TO THE API
+      const newFood = await api.post<IFoodPlate>('/foods', {
+        ...food,
+        available: true,
+      });
+      setFoods(prev => [...prev, newFood.data]);
     } catch (err) {
       console.log(err);
     }
@@ -46,15 +51,21 @@ const Dashboard: React.FC = () => {
   async function handleUpdateFood(
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
-    // TODO UPDATE A FOOD PLATE ON THE API
+    await api.put(`/foods/${editingFood.id}`, { ...editingFood, ...food });
+    setFoods(prev =>
+      prev.map(pre => {
+        return pre.id === editingFood.id ? { ...pre, ...food } : pre;
+      }),
+    );
   }
 
   async function handleDeleteFood(id: number): Promise<void> {
-    // TODO DELETE A FOOD PLATE FROM THE API
+    await api.delete(`/foods/${id}`);
+    setFoods(prev => prev.filter(pre => pre.id !== id));
   }
 
   function toggleModal(): void {
-    setModalOpen(!modalOpen);
+    setModalOpen(prev => !prev);
   }
 
   function toggleEditModal(): void {
@@ -62,7 +73,8 @@ const Dashboard: React.FC = () => {
   }
 
   function handleEditFood(food: IFoodPlate): void {
-    // TODO SET THE CURRENT EDITING FOOD ID IN THE STATE
+    setEditingFood(food);
+    toggleEditModal();
   }
 
   return (
